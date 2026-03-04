@@ -8,7 +8,7 @@ using SurveyBasket.Persistence;
 
 #nullable disable
 
-namespace SurveyBasket.Persistence.Migrations
+namespace SurveyBasket.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
     partial class ApplicationDbContextModelSnapshot : ModelSnapshot
