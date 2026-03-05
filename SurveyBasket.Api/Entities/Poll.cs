@@ -1,6 +1,8 @@
-﻿namespace SurveyBasket.Entities;
+﻿using SurveyBasket.Api.Entities;
 
-public sealed class Poll
+namespace SurveyBasket.Entities;
+
+public sealed class Poll: AuditableEntity
 {
     public int Id { get; set; }
     public string Title { get; set; } = string.Empty;
