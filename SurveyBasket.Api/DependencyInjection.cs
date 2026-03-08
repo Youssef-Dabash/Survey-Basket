@@ -2,9 +2,10 @@
 using MapsterMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
+using SurveyBasket.Api.Errors;
 using SurveyBasket.Authentication;
 using System.Reflection;
-using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
 namespace SurveyBasket;
@@ -15,6 +16,9 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         services.AddControllers();
+
+        services.AddCorsServices(configuration);
+       
 
         services.AddAuthConfig(configuration);
 
@@ -28,6 +32,9 @@ public static class DependencyInjection
             .AddSwaggerServices()
             .AddMapsterConfig()
             .AddFluentValidationConfig();
+
+        services.AddExceptionHandler<GlobalExceptionHandler>();
+        services.AddProblemDetails();
 
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IPollService, PollService>();
@@ -53,7 +60,30 @@ public static class DependencyInjection
 
         return services;
     }
+    private static IServiceCollection AddCorsServices(this IServiceCollection services, IConfiguration configuration)
+    {
+        var getOrigins = configuration.GetSection("AllowedOrigins").Get<string[]>()!;
 
+        services.AddCors(options =>
+            options.AddDefaultPolicy(builder =>
+                builder.AllowAnyHeader()
+                       .AllowAnyMethod()
+                       .WithOrigins(getOrigins)
+            )
+        );
+
+        //services.AddCors(options =>
+        //    options.AddPolicy("MyPolicy", builder =>
+        //                builder.AllowAnyOrigin()
+        //                       .AllowAnyMethod()
+        //                       .AllowAnyHeader()
+        //                       //.WithOrigins("https://localhost:5222")
+        //                       //.WithMethods("Get", "Post")
+        //    )
+        //);
+
+        return services;
+    }
     private static IServiceCollection AddFluentValidationConfig(this IServiceCollection services)
     {
         services

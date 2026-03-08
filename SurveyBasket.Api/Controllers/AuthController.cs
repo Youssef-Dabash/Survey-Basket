@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
+using SurveyBasket.Api.Abstractions;
 using SurveyBasket.Api.Contracts.Authentication;
 using SurveyBasket.Authentication;
 
@@ -17,7 +18,8 @@ public class AuthController(IAuthService authService) : ControllerBase
     {
         var authResult = await _authService.GetTokenAsync(request.Email, request.Password, cancellationToken);
 
-        return authResult is null ? BadRequest("Invalid email/password") : Ok(authResult);
+        return authResult.IsSuccess
+            ? Ok(authResult.Value) : authResult.ToProblem(StatusCodes.Status400BadRequest);
     }
 
     [HttpPost("refresh")]
