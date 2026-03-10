@@ -1,6 +1,7 @@
 ﻿
 using Microsoft.AspNetCore.Authorization;
 using SurveyBasket.Api.Abstractions;
+using SurveyBasket.Api.Services.InterfaceServices;
 
 namespace SurveyBasket.Controllers;
 
@@ -14,11 +15,13 @@ public class PollsController(IPollService pollService) : ControllerBase
     [HttpGet("all")]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
-        var polls = await _pollService.GetAllAsync(cancellationToken);
+        var result = await _pollService.GetAllAsync(cancellationToken);
 
-        var response = polls.Adapt<IEnumerable<PollResponse>>();
+        //var response = polls.Adapt<IEnumerable<PollResponse>>();
 
-        return Ok(response);
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : result.ToProblem(StatusCodes.Status404NotFound);
     }
 
     [HttpPost("add")]
@@ -37,7 +40,6 @@ public class PollsController(IPollService pollService) : ControllerBase
     {
         var result = await _pollService.GetAsync(id, cancellationToken);
 
-        //return result.IsSuccess ? Ok(result.Value) : NotFound(result.Error);
         return result.IsSuccess 
             ? Ok(result.Value) 
             : Problem(statusCode: StatusCodes.Status404NotFound, title: result.Error.title, detail: result.Error.detail);
@@ -60,7 +62,7 @@ public class PollsController(IPollService pollService) : ControllerBase
         return result.IsSuccess ? NoContent() : NotFound(result.Error);
     }
 
-    [HttpPut("toggle-publish/{id}")]
+    [HttpPut("{id}/toggle-publish")]
     public async Task<IActionResult> TogglePublish([FromRoute] int id, CancellationToken cancellationToken)
     {
         var result = await _pollService.TogglePublishStatusAsync(id, cancellationToken);

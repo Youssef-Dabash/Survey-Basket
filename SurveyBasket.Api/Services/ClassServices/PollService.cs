@@ -1,15 +1,22 @@
 ﻿using SurveyBasket.Api.Abstractions;
 using SurveyBasket.Api.Errors;
+using SurveyBasket.Api.Services.InterfaceServices;
 using SurveyBasket.Entities;
 
-namespace SurveyBasket.Services;
+namespace SurveyBasket.Api.Services.ClassServices;
 
 public class PollService(ApplicationDbContext context) : IPollService
 {
     private readonly ApplicationDbContext _context = context;
 
-    public async Task<IEnumerable<Poll>> GetAllAsync(CancellationToken cancellationToken = default) =>
-        await _context.Polls.AsNoTracking().ToListAsync(cancellationToken);
+    public async Task<Result<IEnumerable<PollResponse>>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        var polls = await _context.Polls.AsNoTracking().ToListAsync(cancellationToken);
+
+        return (polls is not null)
+                ? Result.Success(polls.Adapt<IEnumerable<PollResponse>>())
+                : Result.Failure<IEnumerable<PollResponse>>(PollErrors.PollNotFound);
+    }
 
     public async Task<Result<PollResponse>> GetAsync(int id, CancellationToken cancellationToken = default)
     {

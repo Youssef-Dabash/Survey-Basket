@@ -1,10 +1,10 @@
 ﻿using SurveyBasket.Api.Abstractions;
 
-namespace SurveyBasket.Services;
+namespace SurveyBasket.Api.Services.InterfaceServices;
 
 public interface IPollService
 {
-    Task<IEnumerable<Poll>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<PollResponse>>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<Result<PollResponse>> GetAsync(int id, CancellationToken cancellationToken = default);
     Task<Result<PollResponse>> AddAsync(PollRequest poll, CancellationToken cancellationToken = default);
     Task<Result> UpdateAsync(int id, PollRequest poll, CancellationToken cancellationToken = default);
