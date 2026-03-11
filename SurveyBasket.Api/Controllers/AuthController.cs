@@ -21,7 +21,7 @@ public class AuthController(IAuthService authService) : ControllerBase
 
         return authResult.IsSuccess
             ? Ok(authResult.Value) 
-            : authResult.ToProblem(StatusCodes.Status400BadRequest);
+            : authResult.ToProblem();
     }
 
     [HttpPost("refresh")]
@@ -31,7 +31,7 @@ public class AuthController(IAuthService authService) : ControllerBase
 
         return authResult.IsSuccess
             ? Ok(authResult.Value)
-            : authResult.ToProblem(StatusCodes.Status400BadRequest);
+            : authResult.ToProblem();
     }
 
     [HttpPost("revoke-refresh-token")]
@@ -41,6 +41,6 @@ public class AuthController(IAuthService authService) : ControllerBase
 
         return result.IsSuccess 
             ? Ok() 
-            : result.ToProblem(StatusCodes.Status400BadRequest);
+            : result.ToProblem();
     }
 }
