@@ -14,7 +14,7 @@ public class QuestionService(ApplicationDbContext context) : IQuestionService
 
     public async Task<Result<IEnumerable<QuestionResponse>>> GetAllAsync(int pollId, CancellationToken cancellationToken)
     {
-        var pollIsExists = await _context.Polls.AnyAsync(x => x.Id == pollId, cancellationToken: cancellationToken);
+        var pollIsExists = await _context.Polls.AnyAsync(x => x.Id == pollId, cancellationToken);
 
         if (!pollIsExists)
             return Result.Failure<IEnumerable<QuestionResponse>>(PollErrors.PollNotFound);
@@ -78,7 +78,7 @@ public class QuestionService(ApplicationDbContext context) : IQuestionService
 
     public async Task<Result<QuestionResponse>> AddAsync(int pollId, QuestionRequest request, CancellationToken cancellationToken = default)
     {
-        var pollIsExists = await _context.Polls.AnyAsync(x => x.Id == pollId, cancellationToken: cancellationToken);
+        var pollIsExists = await _context.Polls.AnyAsync(x => x.Id == pollId, cancellationToken);
 
         if (!pollIsExists)
             return Result.Failure<QuestionResponse>(PollErrors.PollNotFound);
