@@ -3,6 +3,7 @@ using MapsterMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
 using SurveyBasket.Api.Errors;
 using SurveyBasket.Api.Services.ClassServices;
 using SurveyBasket.Api.Services.InterfaceServices;
@@ -15,14 +16,14 @@ namespace SurveyBasket;
 public static class DependencyInjection
 {
     public static IServiceCollection AddDependencies(this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration, IHostBuilder host)
     {
         services.AddControllers();
+        services.AddCacheServices();
 
         services.AddCorsServices(configuration);
-       
-
         services.AddAuthConfig(configuration);
+
 
         var connectionString = configuration.GetConnectionString("DefaultConnection") ??
             throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
@@ -43,6 +44,10 @@ public static class DependencyInjection
         services.AddScoped<IQuestionService, QuestionService>();
         services.AddScoped<IVoteService, VoteService>();
         services.AddScoped<IResultService, ResultService>();
+        //services.AddScoped<ICacheService, CacheService>();
+
+
+        host.AddSerilogServices();
 
         return services;
     }
@@ -54,7 +59,42 @@ public static class DependencyInjection
 
         return services;
     }
+    private static IServiceCollection AddCacheServices(this IServiceCollection services)
+    {
+        services.AddHybridCache();
 
+        //services.AddDistributedMemoryCache();
+
+        //services.AddMemoryCache();
+
+        //builder.Services.AddOutputCache(options =>
+        //{
+        //    options.AddPolicy("CachePolicy", s =>
+        //        s
+        //        .Cache()
+        //        .Expire(TimeSpan.FromSeconds(120))
+        //        .Tag("availableQuestion")
+        //    );
+        //});
+
+        return services;
+    }
+    private static IHostBuilder AddSerilogServices(this IHostBuilder host)
+    {
+        //builder.Host.UseSerilog((context, configuration) =>
+        //{
+        //    configuration
+        //        .MinimumLevel.Information()
+        //        .WriteTo.Console();
+        //});
+
+        host.UseSerilog((context, configuration) =>
+        {
+            configuration.ReadFrom.Configuration(context.Configuration);
+        });
+
+        return host;
+    }
     private static IServiceCollection AddMapsterConfig(this IServiceCollection services) 
     {
         var mappingConfig = TypeAdapterConfig.GlobalSettings;
@@ -96,7 +136,6 @@ public static class DependencyInjection
 
         return services;
     }
-
     private static IServiceCollection AddAuthConfig(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddIdentity<ApplicationUser, IdentityRole>()
@@ -134,4 +173,6 @@ public static class DependencyInjection
 
         return services;
     }
+
+
 }
