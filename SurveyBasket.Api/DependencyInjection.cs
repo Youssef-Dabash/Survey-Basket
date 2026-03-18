@@ -1,12 +1,15 @@
 ﻿using FluentValidation.AspNetCore;
+using Hangfire;
 using MapsterMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using SurveyBasket.Api.Errors;
 using SurveyBasket.Api.Services.ClassServices;
 using SurveyBasket.Api.Services.InterfaceServices;
+using SurveyBasket.Api.Settings;
 using SurveyBasket.Authentication;
 using System.Reflection;
 using System.Text;
@@ -39,14 +42,19 @@ public static class DependencyInjection
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
 
+        services.Configure<MailSettings>(configuration.GetSection(nameof(MailSettings)));
+
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IEmailSender, EmailService>();
+        services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IPollService, PollService>();
         services.AddScoped<IQuestionService, QuestionService>();
         services.AddScoped<IVoteService, VoteService>();
         services.AddScoped<IResultService, ResultService>();
         //services.AddScoped<ICacheService, CacheService>();
 
-
+        services.AddHttpContextAccessor();
+        services.AddBackgroundJobsConfig(configuration);
         host.AddSerilogServices();
 
         return services;
@@ -139,7 +147,8 @@ public static class DependencyInjection
     private static IServiceCollection AddAuthConfig(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddIdentity<ApplicationUser, IdentityRole>()
-            .AddEntityFrameworkStores<ApplicationDbContext>();
+            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddDefaultTokenProviders();
 
         services.AddSingleton<IJwtProvider, JwtProvider>();
 
@@ -169,7 +178,28 @@ public static class DependencyInjection
                 ValidIssuer = jwtSettings?.Issuer,
                 ValidAudience = jwtSettings?.Audience
             };
+        }); 
+        
+        services.Configure<IdentityOptions>(options =>
+        {
+            options.Password.RequiredLength = 8;
+            options.SignIn.RequireConfirmedEmail = true;
+            options.User.RequireUniqueEmail = true;
         });
+
+        return services;
+    }
+    private static IServiceCollection AddBackgroundJobsConfig(this IServiceCollection services, IConfiguration configuration)
+    {
+        // Add Hangfire services.
+        services.AddHangfire(config => config
+            .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+            .UseSimpleAssemblyNameTypeSerializer()
+            .UseRecommendedSerializerSettings()
+            .UseSqlServerStorage(configuration.GetConnectionString("HangfireConnection")));
+
+        // Add the processing server as IHostedService
+        services.AddHangfireServer();
 
         return services;
     }
