@@ -14,7 +14,7 @@ public class AuthController(IAuthService authService, ILogger<AuthController> lo
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken cancellationToken)
     {
-        var authResult = await _authService.GetRegisterAsync(request, cancellationToken);
+        var authResult = await _authService.RegisterAsync(request, cancellationToken);
 
         return authResult.IsSuccess ? Ok() : authResult.ToProblem();
     }
@@ -57,7 +57,7 @@ public class AuthController(IAuthService authService, ILogger<AuthController> lo
     [HttpPost("revoke-refresh-token")]
     public async Task<IActionResult> RevokeRefreshToken([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
     {
-        var result = await _authService.GetRevokeRefreshTokenAsync(request.token, request.refreshToken, cancellationToken);
+        var result = await _authService.RevokeRefreshTokenAsync(request.token, request.refreshToken, cancellationToken);
 
         return result.IsSuccess ? Ok() : result.ToProblem();
     }

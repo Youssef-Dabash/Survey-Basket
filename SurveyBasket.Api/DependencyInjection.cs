@@ -2,11 +2,15 @@
 using Hangfire;
 using MapsterMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using SurveyBasket.Api.Authentication.Filters;
+using SurveyBasket.Api.Entities;
 using SurveyBasket.Api.Errors;
+using SurveyBasket.Api.Health;
 using SurveyBasket.Api.Services.ClassServices;
 using SurveyBasket.Api.Services.InterfaceServices;
 using SurveyBasket.Api.Settings;
@@ -14,7 +18,7 @@ using SurveyBasket.Authentication;
 using System.Reflection;
 using System.Text;
 
-namespace SurveyBasket;
+namespace SurveyBasket.Api;
 
 public static class DependencyInjection
 {
@@ -46,17 +50,26 @@ public static class DependencyInjection
 
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IEmailSender, EmailService>();
-        services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<IRoleService, RoleService>();
+        services.AddScoped<IUserService, UserService>();
         services.AddScoped<IPollService, PollService>();
-        services.AddScoped<IQuestionService, QuestionService>();
         services.AddScoped<IVoteService, VoteService>();
         services.AddScoped<IResultService, ResultService>();
-        services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IQuestionService, QuestionService>();
+        services.AddScoped<INotificationService, NotificationService>();
         //services.AddScoped<ICacheService, CacheService>();
 
         services.AddHttpContextAccessor();
         services.AddBackgroundJobsConfig(configuration);
         host.AddSerilogServices();
+
+        services.AddHealthChecks()
+            .AddSqlServer(connectionString, name: "DataBase")
+            .AddHangfire(options => { options.MinimumAvailableServers = 1; }, name: "Hangfire")
+            .AddUrlGroup(uri: new Uri ("https://www.google.com"), name: "External Google", tags: ["api"], httpMethod: HttpMethod.Get)
+            .AddUrlGroup(uri: new Uri ("https://www.facebook.com"), name: "External FaceBook", tags: ["api"])
+            .AddCheck<MailProviderHealthCheck>("Mail");
+
 
         return services;
     }
@@ -140,16 +153,18 @@ public static class DependencyInjection
     private static IServiceCollection AddFluentValidationConfig(this IServiceCollection services)
     {
         services
-            .AddFluentValidationAutoValidation()
-            .AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+            .AddFluentValidationAutoValidation().AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
         return services;
     }
     private static IServiceCollection AddAuthConfig(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddIdentity<ApplicationUser, IdentityRole>()
+        services.AddIdentity<ApplicationUser, ApplicationRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();
+
+        services.AddTransient<IAuthorizationHandler, PermissionAuthorizationHandler>();
+        services.AddTransient<IAuthorizationPolicyProvider, PermissionAuthorizationPolicyProvider>();
 
         services.AddSingleton<IJwtProvider, JwtProvider>();
 

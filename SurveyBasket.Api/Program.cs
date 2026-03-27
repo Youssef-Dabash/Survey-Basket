@@ -1,8 +1,10 @@
 using Hangfire;
 using HangfireBasicAuthenticationFilter;
 using Serilog;
-using SurveyBasket;
+using SurveyBasket.Api;
 using SurveyBasket.Api.Services.InterfaceServices;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using HealthChecks.UI.Client;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,5 +46,16 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.UseExceptionHandler();
+
+app.MapHealthChecks("health", new HealthCheckOptions
+{
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
+
+app.MapHealthChecks("health-api", new HealthCheckOptions
+{
+    Predicate = x => x.Tags.Contains("api"),
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
 
 app.Run();
