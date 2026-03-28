@@ -1,5 +1,6 @@
 ﻿
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using SurveyBasket.Api.Abstractions;
 using SurveyBasket.Api.Abstractions.Consts;
 using SurveyBasket.Api.Authentication.Filters;
@@ -23,6 +24,7 @@ public class PollsController(IPollService pollService) : ControllerBase
 
     [HttpGet("current")]
     [Authorize(Roles = DefaultRoles.Member)]
+    [EnableRateLimiting("userLimit")]
     public async Task<IActionResult> GetCurrent(CancellationToken cancellationToken)
     {
         return Ok(await _pollService.GetCurrentAsync(cancellationToken));
