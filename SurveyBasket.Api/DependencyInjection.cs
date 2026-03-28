@@ -1,4 +1,5 @@
-﻿using FluentValidation.AspNetCore;
+﻿using Asp.Versioning;
+using FluentValidation.AspNetCore;
 using Hangfire;
 using MapsterMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -6,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using SurveyBasket.Api.Authentication.Filters;
@@ -16,7 +18,9 @@ using SurveyBasket.Api.Health;
 using SurveyBasket.Api.Services.ClassServices;
 using SurveyBasket.Api.Services.InterfaceServices;
 using SurveyBasket.Api.Settings;
+using SurveyBasket.Api.Swagger;
 using SurveyBasket.Authentication;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Reflection;
 using System.Text;
 using System.Threading.RateLimiting;
@@ -65,6 +69,20 @@ public static class DependencyInjection
         services.AddScoped<INotificationService, NotificationService>();
         //services.AddScoped<ICacheService, CacheService>();
 
+
+        services.AddApiVersioning(options =>
+        {
+            options.DefaultApiVersion = new ApiVersion(1.0);
+            options.AssumeDefaultVersionWhenUnspecified = true;
+            options.ReportApiVersions = true;
+            options.ApiVersionReader = new HeaderApiVersionReader("x-api-version");
+        })
+        .AddApiExplorer(options =>
+        {
+            options.GroupNameFormat = "'v'V";
+            options.SubstituteApiVersionInUrl = true;
+        });
+
         services.AddHttpContextAccessor();
         services.AddBackgroundJobsConfig(configuration);
         host.AddSerilogServices();
@@ -77,7 +95,33 @@ public static class DependencyInjection
     private static IServiceCollection AddSwaggerServices(this IServiceCollection services)
     {
         services.AddEndpointsApiExplorer();
-        services.AddSwaggerGen();
+        services.AddSwaggerGen(options =>
+        {
+            //options.SwaggerDoc("v1", new OpenApiInfo
+            //{
+            //    Version = "v1",
+            //    Title = "ToDo API",
+            //    Description = "An ASP.NET Core Web API for managing ToDo items",
+            //    TermsOfService = new Uri("https://example.com/terms"),
+            //    Contact = new OpenApiContact
+            //    {
+            //        Name = "Example Contact",
+            //        Url = new Uri("https://example.com/contact")
+            //    },
+            //    License = new OpenApiLicense
+            //    {
+            //        Name = "Example License",
+            //        Url = new Uri("https://example.com/license")
+            //    }
+            //});
+
+            var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
+
+            options.OperationFilter<SwaggerDefaultValues>();
+        });
+
+        services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
 
         return services;
     }
@@ -146,7 +190,6 @@ public static class DependencyInjection
 
         return services;
     }
-
     private static IServiceCollection AddHealthChecksServices(this IServiceCollection services, string connectionString)
     {
         services.AddHealthChecks()

@@ -1,13 +1,16 @@
 ﻿using Microsoft.AspNetCore.RateLimiting;
 using SurveyBasket.Api.Abstractions;
+using SurveyBasket.Api.Abstractions.Consts;
 using SurveyBasket.Api.Contracts.Authentication;
 using SurveyBasket.Api.Services.InterfaceServices;
+using System.Threading.RateLimiting;
 
 namespace SurveyBasket.Api.Controllers;
 
 [Route("[controller]")]
 [ApiController]
-[EnableRateLimiting("ipLimit")]
+[Produces("application/json")]
+[EnableRateLimiting(RateLimiters.IpLimiter)]
 public class AuthController(IAuthService authService, ILogger<AuthController> logger) : ControllerBase
 {
     private readonly IAuthService _authService = authService;
@@ -19,6 +22,25 @@ public class AuthController(IAuthService authService, ILogger<AuthController> lo
         var authResult = await _authService.RegisterAsync(request, cancellationToken);
 
         return authResult.IsSuccess ? Ok() : authResult.ToProblem();
+    }
+
+    /// <summary>
+    /// Allow users to get Jwt token
+    /// </summary>
+    /// <param name="request"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns>Return Jwt token if credentials were valid</returns>
+    [HttpPost("login")]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
+    {
+
+        _logger.LogInformation("Logging with email: {email} and password: {password}", request.Email, request.Password);
+
+        var authResult = await _authService.GetTokenAsync(request.Email, request.Password, cancellationToken);
+
+        return authResult.IsSuccess ? Ok(authResult.Value) : authResult.ToProblem();
     }
 
     [HttpPost("confirm-email")]
@@ -37,16 +59,6 @@ public class AuthController(IAuthService authService, ILogger<AuthController> lo
         return authResult.IsSuccess ? Ok() : authResult.ToProblem();
     }
 
-    [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
-    {
-
-        _logger.LogInformation("Logging with email: {email} and password: {password}", request.Email, request.Password);
-
-        var authResult = await _authService.GetTokenAsync(request.Email, request.Password, cancellationToken);
-
-        return authResult.IsSuccess ? Ok(authResult.Value) : authResult.ToProblem();
-    }
 
     [HttpPost("refresh")]
     public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)

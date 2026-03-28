@@ -43,7 +43,6 @@ public class AuthService(
         if(user.IsDisabled)
             return Result.Failure<AuthResponse>(UserErrors.DisabledUser);
 
-
         var result = await _signInManager.PasswordSignInAsync(user, password, false, true);
 
         if (result.Succeeded)
