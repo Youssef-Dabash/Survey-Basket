@@ -1,29 +1,4 @@
-﻿using Asp.Versioning;
-using FluentValidation.AspNetCore;
-using Hangfire;
-using MapsterMapper;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
-using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
-using Serilog;
-using SurveyBasket.Api.Authentication.Filters;
-using SurveyBasket.Api.Entities;
-using SurveyBasket.Api.Errors;
-using SurveyBasket.Api.Extensions;
-using SurveyBasket.Api.Health;
-using SurveyBasket.Api.Services.ClassServices;
-using SurveyBasket.Api.Services.InterfaceServices;
-using SurveyBasket.Api.Settings;
-using SurveyBasket.Api.Swagger;
-using SurveyBasket.Authentication;
-using Swashbuckle.AspNetCore.SwaggerGen;
-using System.Reflection;
-using System.Text;
-using System.Threading.RateLimiting;
+﻿
 
 namespace SurveyBasket.Api;
 
@@ -46,7 +21,7 @@ public static class DependencyInjection
             options.UseSqlServer(connectionString));
 
         services
-            .AddSwaggerServices()
+            //.AddSwaggerServices()
             .AddMapsterConfig()
             .AddFluentValidationConfig();
 
@@ -56,7 +31,10 @@ public static class DependencyInjection
         services.AddHealthChecksServices(connectionString);
         services.AddRateLimiterServices();
 
-        services.Configure<MailSettings>(configuration.GetSection(nameof(MailSettings)));
+        services.AddOptions<MailSettings>()
+            .BindConfiguration(nameof(MailSettings))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IEmailSender, EmailService>();
@@ -87,44 +65,66 @@ public static class DependencyInjection
         services.AddBackgroundJobsConfig(configuration);
         host.AddSerilogServices();
 
+        services.AddEndpointsApiExplorer()
+                .AddOpenApiServices(); 
 
 
         return services;
     }
-
-    private static IServiceCollection AddSwaggerServices(this IServiceCollection services)
+    private static IServiceCollection AddOpenApiServices(this IServiceCollection services)
     {
-        services.AddEndpointsApiExplorer();
-        services.AddSwaggerGen(options =>
+        var serviceProvider = services.BuildServiceProvider();
+        var apiVersionDescriptionProvider = serviceProvider.GetRequiredService<IApiVersionDescriptionProvider>();
+
+        foreach (var description in apiVersionDescriptionProvider.ApiVersionDescriptions)
         {
-            //options.SwaggerDoc("v1", new OpenApiInfo
-            //{
-            //    Version = "v1",
-            //    Title = "ToDo API",
-            //    Description = "An ASP.NET Core Web API for managing ToDo items",
-            //    TermsOfService = new Uri("https://example.com/terms"),
-            //    Contact = new OpenApiContact
-            //    {
-            //        Name = "Example Contact",
-            //        Url = new Uri("https://example.com/contact")
-            //    },
-            //    License = new OpenApiLicense
-            //    {
-            //        Name = "Example License",
-            //        Url = new Uri("https://example.com/license")
-            //    }
-            //});
-
-            var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-            options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
-
-            options.OperationFilter<SwaggerDefaultValues>();
-        });
-
-        services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
-
+            services.AddOpenApi(description.GroupName, options =>
+            {
+                options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+                options.AddDocumentTransformer(new ApiVersioningTransformer(description));
+            });
+        }
         return services;
     }
+
+
+    #region AddSwaggerServices
+    //private static IServiceCollection AddSwaggerServices(this IServiceCollection services)
+    //{
+    //    services.AddEndpointsApiExplorer();
+    //    services.AddSwaggerGen(options =>
+    //    {
+    //        //options.SwaggerDoc("v1", new OpenApiInfo
+    //        //{
+    //        //    Version = "v1",
+    //        //    Title = "ToDo API",
+    //        //    Description = "An ASP.NET Core Web API for managing ToDo items",
+    //        //    TermsOfService = new Uri("https://example.com/terms"),
+    //        //    Contact = new OpenApiContact
+    //        //    {
+    //        //        Name = "Example Contact",
+    //        //        Url = new Uri("https://example.com/contact")
+    //        //    },
+    //        //    License = new OpenApiLicense
+    //        //    {
+    //        //        Name = "Example License",
+    //        //        Url = new Uri("https://example.com/license")
+    //        //    }
+    //        //});
+
+    //        var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    //        options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
+
+    //        options.OperationFilter<SwaggerDefaultValues>();
+    //    });
+
+    //    services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
+
+    //    return services;
+    //}
+
+    #endregion
+
     private static IServiceCollection AddRateLimiterServices(this IServiceCollection services)
     {
         services.AddRateLimiter(rateLimiterOptions =>
@@ -314,8 +314,8 @@ public static class DependencyInjection
                 ValidIssuer = jwtSettings?.Issuer,
                 ValidAudience = jwtSettings?.Audience
             };
-        }); 
-        
+        });
+
         services.Configure<IdentityOptions>(options =>
         {
             options.Password.RequiredLength = 8;

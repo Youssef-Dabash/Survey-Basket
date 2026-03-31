@@ -1,6 +1,7 @@
 ﻿using Hangfire;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using SurveyBasket.Api.Abstractions.Consts;
 using SurveyBasket.Api.Helpers;
 using SurveyBasket.Api.Services.InterfaceServices;
 using static Org.BouncyCastle.Crypto.Engines.SM2Engine;
@@ -33,7 +34,7 @@ public class NotificationService(ApplicationDbContext context,
                 .AsNoTracking()
                 .ToListAsync();
         }
-        var users = await _userManager.Users.ToListAsync();
+        var users = await _userManager.GetUsersInRoleAsync(DefaultRoles.Member);
 
         var origin = _httpContextAccessor.HttpContext?.Request.Headers.Origin;
 

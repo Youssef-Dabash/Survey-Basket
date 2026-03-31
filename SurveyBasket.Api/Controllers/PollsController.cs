@@ -54,7 +54,7 @@ public class PollsController(IPollService pollService) : ControllerBase
             : result.ToProblem();
     }
 
-    [HttpGet("me/{id}")]
+    [HttpGet("{id}/get-id")]
     [HasPermission(Permissions.GetPolls)]
     public async Task<IActionResult> Get([FromRoute] int id, CancellationToken cancellationToken)
     {
@@ -65,7 +65,7 @@ public class PollsController(IPollService pollService) : ControllerBase
             : result.ToProblem();
     }
 
-    [HttpPut("update/{id}")]
+    [HttpPut("{id}/update")]
     [HasPermission(Permissions.UpdatePolls)]
     public async Task<IActionResult> Update([FromRoute] int id, [FromBody] PollRequest request,
         CancellationToken cancellationToken)
@@ -75,7 +75,7 @@ public class PollsController(IPollService pollService) : ControllerBase
         return result.IsSuccess ? NoContent() : result.ToProblem();
     }
 
-    [HttpDelete("delete/{id}")]
+    [HttpDelete("{id}/delete")]
     [HasPermission(Permissions.DeletePolls)]
     public async Task<IActionResult> Delete([FromRoute] int id, CancellationToken cancellationToken)
     {

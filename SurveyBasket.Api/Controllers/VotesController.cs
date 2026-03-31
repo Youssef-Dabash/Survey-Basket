@@ -1,11 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.OutputCaching;
-using Microsoft.AspNetCore.RateLimiting;
-using SurveyBasket.Api.Abstractions;
-using SurveyBasket.Api.Abstractions.Consts;
-using SurveyBasket.Api.Contracts.Votes;
+
 using SurveyBasket.Api.Errors;
 using SurveyBasket.Api.Extensions;
 using SurveyBasket.Api.Services.InterfaceServices;
@@ -22,7 +18,7 @@ public class VotesController(IQuestionService questionService, IVoteService vote
     private readonly IQuestionService _questionService = questionService;
     private readonly IVoteService _voteService = voteService;
 
-    [HttpGet("")]
+    [HttpGet("get-available")]
     [OutputCache(PolicyName = "CachePolicy")]
     public async Task<IActionResult> Start([FromRoute] int pollId, CancellationToken cancellationToken)
     {
@@ -36,7 +32,7 @@ public class VotesController(IQuestionService questionService, IVoteService vote
     }
 
 
-    [HttpPost("")]
+    [HttpPost("add")]
     public async Task<IActionResult> Vote([FromRoute] int pollId,[FromBody] VoteRequest request, CancellationToken cancellationToken)
     {
         var result = await _voteService.AddAsync(pollId, User.GetUserId()!, request, cancellationToken);

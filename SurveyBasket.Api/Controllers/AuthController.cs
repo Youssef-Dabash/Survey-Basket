@@ -1,9 +1,4 @@
-﻿using Microsoft.AspNetCore.RateLimiting;
-using SurveyBasket.Api.Abstractions;
-using SurveyBasket.Api.Abstractions.Consts;
-using SurveyBasket.Api.Contracts.Authentication;
-using SurveyBasket.Api.Services.InterfaceServices;
-using System.Threading.RateLimiting;
+﻿
 
 namespace SurveyBasket.Api.Controllers;
 
@@ -24,12 +19,6 @@ public class AuthController(IAuthService authService, ILogger<AuthController> lo
         return authResult.IsSuccess ? Ok() : authResult.ToProblem();
     }
 
-    /// <summary>
-    /// Allow users to get Jwt token
-    /// </summary>
-    /// <param name="request"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns>Return Jwt token if credentials were valid</returns>
     [HttpPost("login")]
     [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -91,12 +80,4 @@ public class AuthController(IAuthService authService, ILogger<AuthController> lo
 
         return result.IsSuccess ? Ok() : result.ToProblem();
     }
-
-    //[HttpGet("rate-limiter")]
-    //[EnableRateLimiting("token")]
-    //public IActionResult RateLimiterTest()
-    //{
-    //    Thread.Sleep(10000);
-    //    return Ok();
-    //}
 }

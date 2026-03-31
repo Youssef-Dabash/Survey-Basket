@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SurveyBasket.Api.Abstractions;
-using SurveyBasket.Api.Contracts.Users;
 using SurveyBasket.Api.Extensions;
 using SurveyBasket.Api.Services.InterfaceServices;
 
@@ -15,7 +14,7 @@ public class AccountController(IUserService userService) : ControllerBase
 {
     private readonly IUserService _userService = userService;
 
-    [HttpGet("")]
+    [HttpGet("info")]
     public async Task<IActionResult> Info()
     {
         var user = await _userService.GetProfileAsync(User.GetUserId()!);
